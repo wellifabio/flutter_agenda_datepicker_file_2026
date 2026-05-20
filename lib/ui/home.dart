@@ -38,13 +38,13 @@ class _HomeState extends State<Home> {
       compromissos = linhas
           .where((linha) => linha.trim().isNotEmpty)
           .map((linha) {
-            List<String> partes = linha.split(';');
+            List<String> partes = linha.split(',');
             if (partes.length >= 3) {
               return Compromisso(
                 DateTime.parse(partes[0]),
-                partes[1],
+                int.parse(partes[1]),
+                partes.sublist(2).join(','),
                 indice++,
-                int.parse(partes[2]),
               );
             }
           })
@@ -55,6 +55,7 @@ class _HomeState extends State<Home> {
   }
 
   void marcarDiasComCompromissos() async {
+    agendados = [];
     for (int i = 0; i < compromissos.length; i++) {
       setState(() {
         _selectedDays.add(
@@ -67,7 +68,7 @@ class _HomeState extends State<Home> {
         if (compromissos[i].quando.isBefore(DateTime.now())) {
           compromissos[i].status = 3;
         }
-        if (compromissos[i].status == null) {
+        if (compromissos[i].status == 0) {
           agendados.add(compromissos[i]);
         }
       });
@@ -81,7 +82,9 @@ class _HomeState extends State<Home> {
   }
 
   void modalCompromisso(String? descricao, DateTime? qdo, int? indice) {
-    final controller = TextEditingController(text: descricao);
+    final descCtrl = descricao != null
+        ? TextEditingController(text: descricao)
+        : TextEditingController(text: '');
     DateTime dataSelecionada = qdo ?? DateTime.now();
 
     showDialog(
@@ -98,7 +101,7 @@ class _HomeState extends State<Home> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   TextField(
-                    controller: controller,
+                    controller: descCtrl,
                     style: TextStyle(color: AppColors.p1),
                     onChanged: (value) {
                       descricao = value;
@@ -170,7 +173,7 @@ class _HomeState extends State<Home> {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (controller.text.trim().isEmpty) {
+                    if (descCtrl.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Preecnha a descrição do compromisso!"),
@@ -179,17 +182,22 @@ class _HomeState extends State<Home> {
                     } else {
                       Navigator.of(context).pop();
                       setState(() {
-                        final descricao = controller.text.trim();
+                        final descr = descCtrl.text.trim();
                         if (indice != null) {
                           compromissos[indice] = Compromisso(
                             dataSelecionada,
-                            descricao.isNotEmpty
-                                ? descricao
-                                : compromissos[indice].descricao,
+                            0,
+                            descr,
+                            indice,
                           );
                         } else {
                           compromissos.add(
-                            Compromisso(dataSelecionada, descricao),
+                            Compromisso(
+                              dataSelecionada,
+                              0,
+                              descr,
+                              compromissos.length,
+                            ),
                           );
                         }
                       });
@@ -264,11 +272,13 @@ class _HomeState extends State<Home> {
                         title: Text(
                           '${DateFormat('dd/MM/yyyy').format(lista[i].quando)} - ${DateFormat('hh:mm').format(lista[i].quando)}',
                         ),
-                        subtitle: Text('${lista[i].id} ${lista[i].descricao}'),
+                        subtitle: Text(
+                          '${lista[i].indice} ${lista[i].descricao}',
+                        ),
                         trailing: GestureDetector(
                           onTap: () {
                             Navigator.of(context).pop();
-                            modalExcluir(lista[i].id);
+                            modalExcluir(lista[i].indice);
                           },
                           child: Container(
                             padding: EdgeInsets.all(8),
@@ -284,7 +294,7 @@ class _HomeState extends State<Home> {
                           modalCompromisso(
                             lista[i].descricao,
                             lista[i].quando,
-                            lista[i].id,
+                            lista[i].indice,
                           );
                         },
                       );

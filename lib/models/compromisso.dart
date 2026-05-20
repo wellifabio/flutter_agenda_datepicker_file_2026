@@ -1,12 +1,12 @@
 class Compromisso {
   DateTime quando;
   String descricao;
-  int? id;
-  int? status;
+  int status;
+  int? indice;
 
-  Compromisso(this.quando, this.descricao, [this.id, this.status]);
+  Compromisso(this.quando, this.status, this.descricao, [this.indice]);
 
   String toCSV() {
-    return '$quando;$descricao;$status';
+    return '$quando,$status,$descricao';
   }
 }
