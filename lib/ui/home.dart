@@ -24,6 +24,7 @@ class _HomeState extends State<Home> {
     "Cancelado",
     "Esquecido",
   ];
+  int indiceStatus = 0;
 
   @override
   void initState() {
@@ -66,7 +67,9 @@ class _HomeState extends State<Home> {
           ),
         );
         if (compromissos[i].quando.isBefore(DateTime.now())) {
-          compromissos[i].status = 3;
+          if (compromissos[i].status == 0) {
+            compromissos[i].status = 3;
+          }
         }
         if (compromissos[i].status == 0) {
           agendados.add(compromissos[i]);
@@ -86,6 +89,7 @@ class _HomeState extends State<Home> {
         ? TextEditingController(text: descricao)
         : TextEditingController(text: '');
     DateTime dataSelecionada = qdo ?? DateTime.now();
+    indiceStatus = indice != null ? compromissos[indice].status : 0;
 
     showDialog(
       context: context,
@@ -99,6 +103,7 @@ class _HomeState extends State<Home> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 10,
                 children: [
                   TextField(
                     controller: descCtrl,
@@ -113,11 +118,36 @@ class _HomeState extends State<Home> {
                       hintText: "Digite a descrição aqui",
                     ),
                   ),
-                  SizedBox(height: 10),
                   Text(
                     'Quando: ${dataSelecionada.day.toString().padLeft(2, '0')}/${dataSelecionada.month.toString().padLeft(2, '0')}/${dataSelecionada.year} - ${dataSelecionada.hour.toString().padLeft(2, '0')}:${dataSelecionada.minute.toString().padLeft(2, '0')}',
                   ),
-                  SizedBox(height: 10),
+                  DropdownButton<int>(
+                    value: indiceStatus,
+                    borderRadius: BorderRadius.circular(20),
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: 0,
+                        child: Text('Status: ${status[0]}'),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 1,
+                        child: Text('Status: ${status[1]}'),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 2,
+                        child: Text('Status: ${status[2]}'),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 3,
+                        child: Text('Status: ${status[3]}'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        indiceStatus = value ?? 0;
+                      });
+                    },
+                  ),
                   ElevatedButton(
                     onPressed: () async {
                       final data = await showDatePicker(
@@ -140,7 +170,6 @@ class _HomeState extends State<Home> {
                     },
                     child: Text('Selecionar data'),
                   ),
-                  SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () async {
                       final hora = await showTimePicker(
@@ -186,7 +215,7 @@ class _HomeState extends State<Home> {
                         if (indice != null) {
                           compromissos[indice] = Compromisso(
                             dataSelecionada,
-                            0,
+                            indiceStatus,
                             descr,
                             indice,
                           );
@@ -194,7 +223,7 @@ class _HomeState extends State<Home> {
                           compromissos.add(
                             Compromisso(
                               dataSelecionada,
-                              0,
+                              indiceStatus,
                               descr,
                               compromissos.length,
                             ),
@@ -305,7 +334,14 @@ class _HomeState extends State<Home> {
                   ),
                 ),
           actions: [
-            if (dia != null && dia.isAfter(DateTime.now()))
+            if (dia != null &&
+                dia.isAfter(
+                  DateTime.utc(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day - 1,
+                  ),
+                ))
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
@@ -347,6 +383,7 @@ class _HomeState extends State<Home> {
           padding: const EdgeInsets.all(18.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
+            spacing: 20,
             children: [
               TableCalendar(
                 locale: 'pt_BR',
@@ -354,6 +391,7 @@ class _HomeState extends State<Home> {
                 firstDay: DateTime.utc(2026, 1, 1),
                 lastDay: DateTime.utc(2100, 12, 31),
                 calendarFormat: _calendarFormat,
+                headerStyle: HeaderStyle(formatButtonVisible: false),
                 selectedDayPredicate: (day) {
                   return _selectedDays.contains(day);
                 },
